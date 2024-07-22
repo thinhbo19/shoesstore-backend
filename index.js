@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import dataConnect from "../backend/config/dataConnect.js";
-import initRouters from "../backend/Routes/index.js";
+import dataConnect from "./config/dataConnect.js";
+import initRouters from "./Routes/index.js";
 const app = express();
 
 app.use(cors());
