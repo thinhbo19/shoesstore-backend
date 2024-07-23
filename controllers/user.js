@@ -104,6 +104,7 @@ const userControllers = {
       return res.status(200).json({
         success: response ? true : false,
         msg: response ? " successfully" : "Failed",
+        res: response,
       });
     }
   },
