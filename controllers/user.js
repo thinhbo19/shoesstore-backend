@@ -92,6 +92,7 @@ const userControllers = {
         { new: true }
       );
       return res.status(200).json({
+        res: response,
         success: response ? false : true,
         msg: response ? " successfully" : "Failed",
       });
@@ -102,9 +103,9 @@ const userControllers = {
         { new: true }
       );
       return res.status(200).json({
+        res: response,
         success: response ? true : false,
         msg: response ? " successfully" : "Failed",
-        res: response ? response : response,
       });
     }
   },
