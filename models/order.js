@@ -24,6 +24,14 @@ const OrderSchema = new mongoose.Schema(
       default: "Processing",
       enum: ["Cancelled", "Processing", "Shipping", "Success"],
     },
+    paymentMethod: {
+      type: String,
+      enum: ["PayPal", "ZaloPay", "PaymentDelivery"],
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["Paid", "UnPaid"],
+    },
     coupon: {
       type: mongoose.Types.ObjectId,
       ref: "Coupon",

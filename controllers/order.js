@@ -2,10 +2,12 @@ import Order from "../models/order.js";
 import User from "../models/user.js";
 import Coupon from "../models/coupon.js";
 import asyncHandler from "express-async-handler";
+
 const orderController = {
   createOrder: asyncHandler(async (req, res) => {
     const { id } = req.user;
-    const { coupon, address, Note } = req.body;
+    const { coupon, address, Note, status, paymentMethod, paymentStatus } =
+      req.body;
     if (!address) throw new Error("Vui lòng cung cấp địa chỉ.");
     const userCart = await User.findById(id)
       .select("Cart")
@@ -31,7 +33,17 @@ const orderController = {
         throw new Error("Mã giảm giá không hợp lệ.");
       }
     }
-    const Data = { products, totalPrice, OrderBy: id, address, Note, coupon };
+    const Data = {
+      products,
+      totalPrice,
+      OrderBy: id,
+      address,
+      Note,
+      coupon,
+      status,
+      paymentMethod,
+      paymentStatus,
+    };
     const response = await Order.create(Data);
     const populatedResponse = await Order.findById(response._id)
       .populate("products.product", "price productName")
