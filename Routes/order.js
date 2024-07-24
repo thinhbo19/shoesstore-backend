@@ -24,4 +24,9 @@ router.get(
   middlewareControllers.verifyToken,
   orderController.getOrder
 );
+router.delete(
+  "/:oid",
+  middlewareControllers.verifyToken,
+  orderController.deleteOrder
+);
 export default router;

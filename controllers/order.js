@@ -148,6 +148,28 @@ const orderController = {
       response: response ? response : "false",
     });
   }),
+  deleteOrder: asyncHandler(async (req, res) => {
+    const { oid } = req.params;
+    try {
+      const response = await Order.findByIdAndDelete(oid);
+      if (response) {
+        return res.json({
+          success: true,
+          response,
+        });
+      } else {
+        return res.json({
+          success: false,
+          response: "Error: Order not found",
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        response: error.message,
+      });
+    }
+  }),
 };
 
 export default orderController;
