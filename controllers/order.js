@@ -6,8 +6,7 @@ import asyncHandler from "express-async-handler";
 const orderController = {
   createOrder: asyncHandler(async (req, res) => {
     const { id } = req.user;
-    const { coupon, address, Note, status, paymentMethod, paymentStatus } =
-      req.body;
+    const { coupon, address, Note } = req.body;
     if (!address) throw new Error("Vui lòng cung cấp địa chỉ.");
     const userCart = await User.findById(id)
       .select("Cart")
@@ -40,9 +39,6 @@ const orderController = {
       address,
       Note,
       coupon,
-      status,
-      paymentMethod,
-      paymentStatus,
     };
     const response = await Order.create(Data);
     const populatedResponse = await Order.findById(response._id)
@@ -107,7 +103,15 @@ const orderController = {
   }),
   createOrderCopy: asyncHandler(async (req, res) => {
     const { id } = req.user;
-    const { products, coupon, status, Note, address } = req.body;
+    const {
+      products,
+      coupon,
+      Note,
+      address,
+      status,
+      paymentMethod,
+      paymentStatus,
+    } = req.body;
     if (!products || products === 0) throw new Error("No products");
     if (!address)
       return res.status(400).json({
@@ -118,7 +122,14 @@ const orderController = {
     products.forEach((el) => {
       totalPrice += el.price * +el.count;
     });
-    const Data = { products, totalPrice, OrderBy: id };
+    const Data = {
+      products,
+      totalPrice,
+      OrderBy: id,
+      status,
+      paymentMethod,
+      paymentStatus,
+    };
     if (address) {
       await User.findByIdAndUpdate(id, { $push: { address } }, { Cart: [] });
       Data.address = address;
@@ -130,7 +141,6 @@ const orderController = {
         1000; // sao cái này ra 0
       (Data.totalPrice = totalPrice), (Data.coupon = coupon);
     }
-    if (status) Data.status = status;
     if (Note) Data.Note = Note;
     const response = await Order.create(Data);
     return res.json({
