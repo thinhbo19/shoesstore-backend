@@ -3,29 +3,23 @@ import User from "../models/user.js";
 
 const middlewareControllers = {
   // Verify Token
-  verifyToken: async (req, res, next) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ message: "Token is missing or invalid" });
+  verifyToken: (req, res, next) => {
+    const token = req.headers.token || req.headers.authorization;
+    if (token) {
+      const accessToken = token.split(" ")[1];
+      if (!accessToken) {
+        return res.status(401).json("Token is missing");
       }
-
-      const token = authHeader.split(" ")[1];
-      if (!token) {
-        return res.status(401).json({ message: "Token is missing" });
-      }
-
-      jwt.verify(token, process.env.MY_private_key, (error, user) => {
+      jwt.verify(accessToken, process.env.MY_private_key, (error, user) => {
         if (error) {
           console.error("Token verification failed:", error);
-          return res.status(403).json({ message: "Token is not valid" });
+          return res.status(403).json("Token is not valid");
         }
         req.user = user;
         next();
       });
-    } catch (error) {
-      console.error("Error in verifyToken middleware:", error);
-      return res.status(500).json({ message: "Internal server error" });
+    } else {
+      return res.status(401).json("You're not authenticated");
     }
   },
 
@@ -40,7 +34,7 @@ const middlewareControllers = {
         ) {
           return res.status(401).json({
             success: false,
-            message: "You are not admin or staff!",
+            message: "You are not admin or staff!!!!!",
           });
         }
         next();
