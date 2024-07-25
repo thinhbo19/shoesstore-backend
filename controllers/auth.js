@@ -154,7 +154,7 @@ const authControllers = {
     if (!user) throw new Error("User not found");
     const resetToken = await token_Email.createToken(user);
     await user.save();
-    const html = ` Please copy a resetToken and click the link below to reset your password of you account. 
+    const html = ` Please copy a resetToken:"${resetToken}" and click the link below to reset your password of you account. 
             <a href=${process.env.CLIENT_URL}/dang-nhap/reset-password>Click here</a>`;
 
     const data = {
