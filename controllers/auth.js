@@ -155,7 +155,7 @@ const authControllers = {
     const resetToken = await token_Email.createToken(user);
     await user.save();
     const html = ` Please click the link below to reset your password of you account. 
-            <a href=${process.env.CLIENT_URL}/reset-password/${resetToken}>Click here</a>`;
+            <a href=${process.env.CLIENT_URL}/dang-nhap/reset-password/${resetToken}>Click here</a>`;
 
     const data = {
       email,
