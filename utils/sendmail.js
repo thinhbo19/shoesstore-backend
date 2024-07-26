@@ -17,7 +17,7 @@ const sendMail = asyncHandler(async ({ email, html }) => {
     from: 'Shoes_Shop" <no-relply@gmail.com>', // sender address
     to: email, // list of receivers
     subject: "Forgot password", // Subject line
-    html: html, // html body
+    html: html,
   });
 
   return info;

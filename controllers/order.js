@@ -2,12 +2,15 @@ import Order from "../models/order.js";
 import User from "../models/user.js";
 import Coupon from "../models/coupon.js";
 import asyncHandler from "express-async-handler";
+import moment from "moment";
+import querystring from "qs";
+import crypto from "crypto";
 import axios from "axios";
 
 const config = {
-  app_id: "2554",
-  key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
-  key2: "trMrHtvjo6myautxDUiAcYsVtaeQ8nhf",
+  app_id: "2553",
+  key1: "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL",
+  key2: "kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz",
   endpoint: "https://sb-openapi.zalopay.vn/v2/create",
 };
 
@@ -177,60 +180,103 @@ const orderController = {
     }
   }),
   createPaymentUrl: asyncHandler(async (req, res) => {
-    const { id } = req.user;
-    const {
-      products,
-      coupon,
-      Note,
-      address,
-      status,
-      paymentMethod,
-      paymentStatus,
-    } = req.body;
+    try {
+      const {
+        userId,
+        products,
+        coupon,
+        Note,
+        address,
+        status,
+        paymentMethod,
+        paymentStatus,
+      } = req.body;
 
-    const embed_data = {
-      redirecturl: "https://shoesstore-thinhbo19s-projects.vercel.app",
-    };
+      let totalPrice = 0;
+      if (!products || products.length === 0) {
+        return res.status(400).json({ success: false, msg: "No products" });
+      }
+      products.forEach((el) => {
+        totalPrice += el.price * el.count;
+      });
 
-    const items = [{ products }];
-    const transID = Math.floor(Math.random() * 1000000);
-    const order = {
-      app_id: config.app_id,
-      app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
-      app_user: "user123",
-      app_time: Date.now(),
-      item: JSON.stringify(items),
-      embed_data: JSON.stringify(embed_data),
-      amount: 50000,
-      description: `Lazada - Payment for the order #${transID}`,
-      bank_code: "zalopayapp",
-    };
+      const embed_data = {
+        redirecturl: process.env.CLIENT_URL,
+      }; // Dữ liệu nhúng (nếu cần)
+      const items = products.map((product) => ({
+        id: product.product,
+        name: product.name,
+        price: product.price,
+        count: product.count,
+        img: product.img,
+      })); // Danh sách các mặt hàng
 
-    const data =
-      config.app_id +
-      "|" +
-      order.app_trans_id +
-      "|" +
-      order.app_user +
-      "|" +
-      order.amount +
-      "|" +
-      order.app_time +
-      "|" +
-      order.embed_data +
-      "|" +
-      order.item;
-    order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
+      const transID = Math.floor(Math.random() * 1000000); // ID giao dịch ngẫu nhiên
+
+      const order = {
+        app_id: config.app_id,
+        app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
+        app_user: userId,
+        app_time: Date.now(),
+        item: JSON.stringify(items),
+        embed_data: JSON.stringify(embed_data),
+        amount: totalPrice,
+        description: `Lazada - Payment for the order #${transID}`,
+        bank_code: "",
+        callback_Url:
+          "https://shoesstore-backend-production.up.railway.app/callback",
+      };
+
+      // Tạo dữ liệu cần ký
+      const data = `${config.app_id}|${order.app_trans_id}|${order.app_user}|${order.amount}|${order.app_time}|${order.embed_data}|${order.item}`;
+
+      // Tạo chữ ký HMAC
+      const hmac = crypto.createHmac("sha256", config.key1);
+      hmac.update(data);
+      order.mac = hmac.digest("hex");
+      // Gửi yêu cầu tới API ZaloPay
+      const response = await axios.post(config.endpoint, null, {
+        params: order,
+      });
+
+      return res.status(200).json(response.data);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: "Error",
+      });
+    }
+  }),
+  getPaymentUrl: asyncHandler(async (req, res) => {
+    let result = {};
 
     try {
-      const result = await axios.post(config.endpoint, null, { params: order });
+      let dataStr = req.body.data;
+      let reqMac = req.body.mac;
 
-      return res.status(200).json({
-        result,
-      });
-    } catch (error) {
-      throw Error;
+      let mac = crypto.createHmac("sha256", config.key2).toString();
+      console.log("mac =", mac);
+
+      if (reqMac !== mac) {
+        result.return_code = -1;
+        result.return_message = "mac not equal";
+      } else {
+        let dataJson = JSON.parse(dataStr, config.key2);
+        console.log(
+          "update order's status = success where app_trans_id =",
+          dataJson["app_trans_id"]
+        );
+
+        result.return_code = 1;
+        result.return_message = "success";
+      }
+    } catch (ex) {
+      result.return_code = 0;
+      result.return_message = ex.message;
     }
+
+    res.json(result);
   }),
 };
 

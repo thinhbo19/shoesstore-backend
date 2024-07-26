@@ -30,9 +30,6 @@ router.delete(
   orderController.deleteOrder
 );
 
-router.post(
-  "/createUrl",
-  middlewareControllers.verifyToken,
-  orderController.createPaymentUrl
-);
+router.post("/createUrl", orderController.createPaymentUrl);
+router.post("/callback", orderController.getPaymentUrl);
 export default router;
