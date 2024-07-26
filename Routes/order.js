@@ -29,4 +29,10 @@ router.delete(
   middlewareControllers.verifyToken,
   orderController.deleteOrder
 );
+
+router.post(
+  "/createUrl",
+  middlewareControllers.verifyToken,
+  orderController.createPaymentUrl
+);
 export default router;
