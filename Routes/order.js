@@ -30,6 +30,14 @@ router.delete(
   orderController.deleteOrder
 );
 
-router.post("/createUrl", orderController.createPaymentUrl);
-router.post("/callback", orderController.getPaymentUrl);
+router.post(
+  "/createUrl",
+  // middlewareControllers.verifyToken,
+  orderController.createPaymentUrl
+);
+router.get(
+  "/vnpay_return",
+  // middlewareControllers.verifyToken,
+  orderController.handelVnPayReturn
+);
 export default router;

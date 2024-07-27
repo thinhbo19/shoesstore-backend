@@ -10,9 +10,12 @@ const middlewareControllers = {
       if (!accessToken) {
         return res.status(401).json("Token is missing");
       }
-      jwt.verify(accessToken, process.env.MY_private_key, (error, user) => {
+      jwt.verify(accessToken, process.env.MY_PRIVATE_KEY, (error, user) => {
         if (error) {
           console.error("Token verification failed:", error);
+          if (error.name === "TokenExpiredError") {
+            return res.status(403).json("Token expired. Please log in again.");
+          }
           return res.status(403).json("Token is not valid");
         }
         req.user = user;

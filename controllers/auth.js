@@ -37,9 +37,9 @@ const authControllers = {
         id: user.id,
         admin: user.admin,
       },
-      process.env.MY_private_key,
+      process.env.MY_PRIVATE_KEY,
       {
-        expiresIn: "1d",
+        expiresIn: "2d",
       }
     );
   },
@@ -49,7 +49,7 @@ const authControllers = {
         id: user.id,
         admin: user.admin,
       },
-      process.env.MY_fresh_key,
+      process.env.MY_FRESH_KEY,
       {
         expiresIn: "365d",
       }
@@ -113,7 +113,7 @@ const authControllers = {
     if (!foundUser) {
       throw new Error("Invalid refreshToken"); // Token không tồn tại trong cơ sở dữ liệu
     }
-    jwt.verify(refreshToken, process.env.MY_fresh_key, async (error, user) => {
+    jwt.verify(refreshToken, process.env.MY_FRESH_KEY, async (error, user) => {
       if (error) {
         console.log(error);
       }

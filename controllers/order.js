@@ -2,17 +2,27 @@ import Order from "../models/order.js";
 import User from "../models/user.js";
 import Coupon from "../models/coupon.js";
 import asyncHandler from "express-async-handler";
-import moment from "moment";
 import querystring from "qs";
 import crypto from "crypto";
-import axios from "axios";
+import moment from "moment";
 
-const config = {
-  app_id: "2553",
-  key1: "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL",
-  key2: "kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz",
-  endpoint: "https://sb-openapi.zalopay.vn/v2/create",
-};
+function sortObject(obj) {
+  let sorted = {};
+  let str = [];
+  let key;
+  for (key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      str.push(encodeURIComponent(key));
+    }
+  }
+  str.sort();
+  for (key = 0; key < str.length; key++) {
+    sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+  }
+  return sorted;
+}
+
+var inforOrder = {};
 
 const orderController = {
   createOrder: asyncHandler(async (req, res) => {
@@ -136,13 +146,10 @@ const orderController = {
       totalPrice,
       OrderBy: id,
       status,
+      address,
       paymentMethod,
       paymentStatus,
     };
-    if (address) {
-      await User.findByIdAndUpdate(id, { $push: { address } }, { Cart: [] });
-      Data.address = address;
-    }
     if (coupon) {
       const selectCoupon = await Coupon.findById(coupon);
       totalPrice =
@@ -199,47 +206,63 @@ const orderController = {
       products.forEach((el) => {
         totalPrice += el.price * el.count;
       });
+      if (!address)
+        return res.status(400).json({
+          success: false,
+          mes: "Bạn chưa chọn địa chỉ",
+        });
 
-      const embed_data = {
-        redirecturl: process.env.CLIENT_URL,
-      }; // Dữ liệu nhúng (nếu cần)
-      const items = products.map((product) => ({
-        id: product.product,
-        name: product.name,
-        price: product.price,
-        count: product.count,
-        img: product.img,
-      })); // Danh sách các mặt hàng
+      var ipAddr =
+        req.headers["x-forwarded-for"] ||
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.connection.socket.remoteAddress;
 
-      const transID = Math.floor(Math.random() * 1000000); // ID giao dịch ngẫu nhiên
+      var tmnCode = process.env.vnp_TmnCode;
+      var secretKey = process.env.vnp_HashSecret;
+      var vnpUrl = process.env.vnp_Url;
+      var returnUrl = process.env.vnp_ReturnUrl;
 
-      const order = {
-        app_id: config.app_id,
-        app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
-        app_user: userId,
-        app_time: Date.now(),
-        item: JSON.stringify(items),
-        embed_data: JSON.stringify(embed_data),
-        amount: totalPrice,
-        description: `Lazada - Payment for the order #${transID}`,
-        bank_code: "",
-        callback_Url:
-          "https://shoesstore-backend-production.up.railway.app/callback",
-      };
+      var date = new Date();
 
-      // Tạo dữ liệu cần ký
-      const data = `${config.app_id}|${order.app_trans_id}|${order.app_user}|${order.amount}|${order.app_time}|${order.embed_data}|${order.item}`;
+      var createDate = moment(date).format("YYYYMMDDHHmmss");
+      var amount = totalPrice;
+      var bankCode = req.body.bankCode;
+      let vnp_TxnRef = createDate;
 
-      // Tạo chữ ký HMAC
-      const hmac = crypto.createHmac("sha256", config.key1);
-      hmac.update(data);
-      order.mac = hmac.digest("hex");
-      // Gửi yêu cầu tới API ZaloPay
-      const response = await axios.post(config.endpoint, null, {
-        params: order,
-      });
+      var locale = req.body.language;
+      if (locale === null || locale === "") {
+        locale = "vn";
+      }
+      var currCode = "VND";
+      var vnp_Params = {};
+      vnp_Params["vnp_Version"] = "2.1.0";
+      vnp_Params["vnp_Command"] = "pay";
+      vnp_Params["vnp_TmnCode"] = tmnCode;
+      vnp_Params["vnp_Locale"] = locale;
+      vnp_Params["vnp_CurrCode"] = currCode;
+      vnp_Params["vnp_TxnRef"] = vnp_TxnRef;
+      vnp_Params["vnp_OrderInfo"] = "Thanh toan cho ma GD:" + vnp_TxnRef;
+      vnp_Params["vnp_OrderType"] = "other";
+      vnp_Params["vnp_Amount"] = amount * 100;
+      vnp_Params["vnp_ReturnUrl"] = returnUrl;
+      vnp_Params["vnp_IpAddr"] = ipAddr;
+      vnp_Params["vnp_CreateDate"] = createDate;
+      if (bankCode !== null && bankCode !== "") {
+        vnp_Params["vnp_BankCode"] = bankCode;
+      }
 
-      return res.status(200).json(response.data);
+      const sortedParams = sortObject(vnp_Params);
+
+      const signData = querystring.stringify(sortedParams, { encode: false });
+      const hmac = crypto.createHmac("sha512", secretKey);
+      const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+      sortedParams["vnp_SecureHash"] = signed;
+
+      const paymentUrl =
+        vnpUrl + "?" + querystring.stringify(sortedParams, { encode: false });
+
+      return res.status(200).json({ success: true, paymentUrl });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
@@ -248,35 +271,18 @@ const orderController = {
       });
     }
   }),
-  getPaymentUrl: asyncHandler(async (req, res) => {
-    let result = {};
-
+  handelVnPayReturn: asyncHandler(async (req, res) => {
     try {
-      let dataStr = req.body.data;
-      let reqMac = req.body.mac;
+      const vnp_Params = req.query;
 
-      let mac = crypto.createHmac("sha256", config.key2).toString();
-      console.log("mac =", mac);
-
-      if (reqMac !== mac) {
-        result.return_code = -1;
-        result.return_message = "mac not equal";
-      } else {
-        let dataJson = JSON.parse(dataStr, config.key2);
-        console.log(
-          "update order's status = success where app_trans_id =",
-          dataJson["app_trans_id"]
-        );
-
-        result.return_code = 1;
-        result.return_message = "success";
-      }
-    } catch (ex) {
-      result.return_code = 0;
-      result.return_message = ex.message;
+      return res.status(200).json({ success: true, vnp_Params });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: "Error",
+      });
     }
-
-    res.json(result);
   }),
 };
 
