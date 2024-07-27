@@ -5,6 +5,7 @@ import asyncHandler from "express-async-handler";
 import querystring from "qs";
 import crypto from "crypto";
 import moment from "moment";
+import OrderService from "../service/OrderService.js";
 
 function sortObject(obj) {
   let sorted = {};
@@ -186,7 +187,7 @@ const orderController = {
       });
     }
   }),
-  createPaymentUrl: asyncHandler(async (req, res) => {
+  hanlePaymentUrl: asyncHandler(async (req, res) => {
     try {
       const {
         userId,
@@ -197,20 +198,18 @@ const orderController = {
         status,
         paymentMethod,
         paymentStatus,
+        totalPrice,
       } = req.body;
 
-      let totalPrice = 0;
-      if (!products || products.length === 0) {
-        return res.status(400).json({ success: false, msg: "No products" });
-      }
-      products.forEach((el) => {
-        totalPrice += el.price * el.count;
-      });
-      if (!address)
-        return res.status(400).json({
-          success: false,
-          mes: "Bạn chưa chọn địa chỉ",
-        });
+      inforOrder.userId = userId;
+      inforOrder.coupon = coupon;
+      inforOrder.Note = Note;
+      inforOrder.address = address;
+      inforOrder.status = status;
+      inforOrder.paymentMethod = paymentMethod;
+      inforOrder.paymentStatus = paymentStatus;
+      inforOrder.totalPrice = totalPrice;
+      inforOrder.products = products;
 
       var ipAddr =
         req.headers["x-forwarded-for"] ||
@@ -218,10 +217,10 @@ const orderController = {
         req.socket.remoteAddress ||
         req.connection.socket.remoteAddress;
 
-      var tmnCode = process.env.vnp_TmnCode;
-      var secretKey = process.env.vnp_HashSecret;
-      var vnpUrl = process.env.vnp_Url;
-      var returnUrl = process.env.vnp_ReturnUrl;
+      var tmnCode = process.env.VNP_TMNCODE;
+      var secretKey = process.env.VNP_HASHSECRET;
+      var vnpUrl = process.env.VNP_URL;
+      var returnUrl = process.env.VNP_RETURNURL;
 
       var date = new Date();
 
@@ -271,16 +270,44 @@ const orderController = {
       });
     }
   }),
+
   handelVnPayReturn: asyncHandler(async (req, res) => {
     try {
-      const vnp_Params = req.query;
+      let vnp_Params = req.query;
+      let secureHash = vnp_Params["vnp_SecureHash"];
 
-      return res.status(200).json({ success: true, vnp_Params });
+      delete vnp_Params["vnp_SecureHash"];
+      delete vnp_Params["vnp_SecureHashType"];
+
+      vnp_Params = sortObject(vnp_Params);
+      let secretKey = process.env.VNP_HASHSECRET;
+      let signData = querystring.stringify(vnp_Params, { encode: false });
+      let hmac = crypto.createHmac("sha512", secretKey);
+      let signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
+      if (secureHash === signed) {
+        let message = await OrderService.createOrderService({
+          ...inforOrder,
+          totalPrice: vnp_Params.vnp_Amount / 100,
+        });
+
+        if (message.errCode === 0) {
+          return res.redirect(
+            `${process.env.CLIENT_URL}/thong-tin/lich-su-mua-hang/${message?.orderId}`
+          );
+        } else {
+          return res.status(400).json(message);
+        }
+      } else {
+        return res
+          .status(400)
+          .json({ errCode: -1, message: "Invalid signature" });
+      }
     } catch (error) {
-      console.error(error);
+      console.log(error);
       return res.status(500).json({
-        success: false,
-        message: "Error",
+        errCode: -1,
+        message: "Server error",
       });
     }
   }),

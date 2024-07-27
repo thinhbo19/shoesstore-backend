@@ -33,11 +33,8 @@ router.delete(
 router.post(
   "/createUrl",
   // middlewareControllers.verifyToken,
-  orderController.createPaymentUrl
+  orderController.hanlePaymentUrl
 );
-router.get(
-  "/vnpay_return",
-  // middlewareControllers.verifyToken,
-  orderController.handelVnPayReturn
-);
+router.get("/vnpay_return", orderController.handelVnPayReturn);
+
 export default router;
