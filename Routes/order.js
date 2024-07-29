@@ -8,6 +8,7 @@ router.post(
   orderController.createOrder
 );
 router.get("/", middlewareControllers.verifyToken, orderController.getByUser);
+
 router.get("/admin", orderController.getByAdmin);
 router.put(
   "/status/:oid",
@@ -19,11 +20,7 @@ router.post(
   middlewareControllers.verifyToken,
   orderController.createOrderCopy
 );
-router.get(
-  "/:oid",
-  middlewareControllers.verifyToken,
-  orderController.getOrder
-);
+
 router.delete(
   "/:oid",
   middlewareControllers.verifyToken,
@@ -36,5 +33,11 @@ router.post(
   orderController.hanlePaymentUrl
 );
 router.get("/vnpay_return", orderController.handelVnPayReturn);
+
+router.get(
+  "/:oid",
+  middlewareControllers.verifyToken,
+  orderController.getOrder
+);
 
 export default router;

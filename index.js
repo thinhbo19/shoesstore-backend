@@ -5,12 +5,12 @@ import cookieParser from "cookie-parser";
 import dataConnect from "./config/dataConnect.js";
 import initRouters from "./Routes/index.js";
 const app = express();
+dotenv.config();
 
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 
-dotenv.config();
 dataConnect();
 const PORT = process.env.PORT;
 initRouters(app);

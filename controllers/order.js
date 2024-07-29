@@ -291,9 +291,9 @@ const orderController = {
           totalPrice: vnp_Params.vnp_Amount / 100,
         });
 
-        if (message.errCode === 0) {
+        if (message) {
           return res.redirect(
-            `${process.env.CLIENT_URL}/thong-tin/lich-su-mua-hang/${message?.orderId}`
+            `${process.env.CLIENT_URL}/chi-tiet-don-hang/${message?._id}`
           );
         } else {
           return res.status(400).json(message);
