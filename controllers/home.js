@@ -48,15 +48,56 @@ const HomeControls = {
     let response;
     if (received_message.text) {
       response = {
-        text: `You sent the message: ${received_message.text}. Now send me an image!`,
+        text: `You sent the message: "${received_message.text}". Now send me an attachment!`,
+      };
+    } else if (received_message.attachments) {
+      let attachment_url = received_message.attachments[0].payload.url;
+      response = {
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "generic",
+            elements: [
+              {
+                title: "Is this the right picture?",
+                subtitle: "Tap a button to answer.",
+                image_url: attachment_url,
+                buttons: [
+                  {
+                    type: "postback",
+                    title: "Yes!",
+                    payload: "yes",
+                  },
+                  {
+                    type: "postback",
+                    title: "No!",
+                    payload: "no",
+                  },
+                ],
+              },
+            ],
+          },
+        },
       };
     }
+
     await HomeControls.callSendAPI(sender_psid, response);
   },
 
   handlePostback: async (sender_psid, received_postback) => {
-    // Xử lý khi người dùng click vào các postback buttons
-    console.log("Received postback:", received_postback);
+    let response;
+
+    // Get the payload for the postback
+    let payload = received_postback.payload;
+
+    // Set the response based on the postback payload
+    if (payload === "yes") {
+      response = { text: "Thanks!" };
+    } else if (payload === "no") {
+      response = { text: "Oops, try sending another image." };
+    }
+    // Send the message to acknowledge the postback
+    HomeControls.callSendAPI(sender_psid, response);
   },
 
   callSendAPI: async (sender_psid, response) => {
