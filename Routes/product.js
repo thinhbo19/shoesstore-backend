@@ -25,6 +25,7 @@ router.put(
   productController.uploadImgProduct
 );
 router.get("/:pid", productController.getProduct);
+router.post("/getByName", productController.getProductByName);
 router.put(
   "/:pid",
   middlewareControllers.verifyTokenAdminAuth,

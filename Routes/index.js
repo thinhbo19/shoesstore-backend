@@ -6,7 +6,6 @@ import couponRouter from "../Routes/coupon.js";
 import orderRouter from "../Routes/order.js";
 import chatRouter from "../Routes/chat.js";
 import messRouter from "../Routes/messager.js";
-import homeRouter from "../Routes/home.js";
 import { notFound, errHandler } from "../middleware/errorHandler.js";
 
 const initRouters = (app) => {
@@ -18,7 +17,6 @@ const initRouters = (app) => {
   app.use("/order", orderRouter);
   app.use("/chat", chatRouter);
   app.use("/mess", messRouter);
-  app.use("/home", homeRouter);
   app.use(notFound);
   app.use(errHandler);
 };

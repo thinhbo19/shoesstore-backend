@@ -1,6 +1,17 @@
-import { response } from "express";
 import Product from "../models/product.js";
 import asyncHandler from "express-async-handler";
+
+function removeVietnameseTones(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/\s+/g, "-")
+    .replace(/\//g, "-")
+    .toLowerCase();
+}
+
 const productController = {
   createProduct: asyncHandler(async (req, res) => {
     const img = req?.files?.img?.map((el) => el.path);
@@ -44,7 +55,36 @@ const productController = {
     }
   }),
 
-  // Filtering, sorting & pagination
+  getProductByName: asyncHandler(async (req, res) => {
+    try {
+      const { productName } = req.body;
+      const products = await Product.find();
+
+      const product = products.find((product) => {
+        const slug = removeVietnameseTones(product.productName);
+        return slug === productName;
+      });
+
+      if (product) {
+        return res.status(200).json({
+          success: true,
+          productData: product,
+        });
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: "Sản phẩm không tồn tại",
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy sản phẩm:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi lấy sản phẩm",
+      });
+    }
+  }),
+
   getProducts: asyncHandler(async (req, res) => {
     const queryObj = { ...req.query };
     const excludedFields = ["page", "sort", "limit", "fields"];
