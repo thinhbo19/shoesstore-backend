@@ -303,7 +303,6 @@ const orderController = {
       });
     }
   }),
-
   handelVnPayReturn: asyncHandler(async (req, res) => {
     try {
       let vnp_Params = req.query;
@@ -323,6 +322,14 @@ const orderController = {
           ...inforOrder,
           totalPrice: vnp_Params.vnp_Amount / 100,
         });
+
+        for (const product of inforOrder.products) {
+          await updateSizeProduct({
+            name: product.name,
+            size: product.size,
+            numberOfSize: product.count,
+          });
+        }
 
         if (message) {
           return res.redirect(
