@@ -6,6 +6,30 @@ import querystring from "qs";
 import crypto from "crypto";
 import moment from "moment";
 import OrderService from "../service/OrderService.js";
+import Product from "../models/product.js";
+
+const updateSizeProduct = async ({ name, size, numberOfSize }) => {
+  try {
+    const product = await Product.findOne({ productName: name });
+    console.log(product);
+
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm.");
+    }
+
+    const sizeToUpdate = product.quantity.find((s) => s.size === size);
+
+    if (!sizeToUpdate) {
+      throw new Error(`Size ${size} không tồn tại trong sản phẩm.`);
+    }
+
+    sizeToUpdate.numberOfSize -= numberOfSize; // Trừ số lượng đã mua khỏi số lượng hiện có
+
+    await product.save();
+  } catch (error) {
+    throw new Error(`Lỗi khi cập nhật size sản phẩm: ${error.message}`);
+  }
+};
 
 function sortObject(obj) {
   let sorted = {};
@@ -155,11 +179,20 @@ const orderController = {
       const selectCoupon = await Coupon.findById(coupon);
       totalPrice =
         Math.round(totalPrice * (1 - +selectCoupon?.discount / 100) * 1000) /
-        1000; // sao cái này ra 0
+        1000;
       (Data.totalPrice = totalPrice), (Data.coupon = coupon);
     }
     if (Note) Data.Note = Note;
     const response = await Order.create(Data);
+    if (response) {
+      for (const product of products) {
+        await updateSizeProduct({
+          name: product.name,
+          size: product.size,
+          numberOfSize: product.count,
+        });
+      }
+    }
     return res.json({
       success: response ? true : false,
       response: response ? response : "false",
