@@ -28,10 +28,6 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       enum: ["PayPal", "VNPay", "PaymentDelivery"],
     },
-    paymentStatus: {
-      type: String,
-      enum: ["Paid", "UnPaid"],
-    },
     coupon: {
       type: mongoose.Types.ObjectId,
       ref: "Coupon",

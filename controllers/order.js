@@ -147,15 +147,7 @@ const orderController = {
   }),
   createOrderCopy: asyncHandler(async (req, res) => {
     const { id } = req.user;
-    const {
-      products,
-      coupon,
-      Note,
-      address,
-      status,
-      paymentMethod,
-      paymentStatus,
-    } = req.body;
+    const { products, coupon, Note, address, status, paymentMethod } = req.body;
     if (!products || products === 0) throw new Error("No products");
     if (!address)
       return res.status(400).json({
@@ -173,7 +165,6 @@ const orderController = {
       status,
       address,
       paymentMethod,
-      paymentStatus,
     };
     if (coupon) {
       const selectCoupon = await Coupon.findById(coupon);
@@ -230,7 +221,6 @@ const orderController = {
         address,
         status,
         paymentMethod,
-        paymentStatus,
         totalPrice,
       } = req.body;
 
@@ -240,7 +230,6 @@ const orderController = {
       inforOrder.address = address;
       inforOrder.status = status;
       inforOrder.paymentMethod = paymentMethod;
-      inforOrder.paymentStatus = paymentStatus;
       inforOrder.totalPrice = totalPrice;
       inforOrder.products = products;
 
