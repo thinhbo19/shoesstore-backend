@@ -27,11 +27,7 @@ router.delete(
   orderController.deleteOrder
 );
 
-router.post(
-  "/createUrl",
-  // middlewareControllers.verifyToken,
-  orderController.hanlePaymentUrl
-);
+router.post("/createUrl", orderController.hanlePaymentUrl);
 router.get("/vnpay_return", orderController.handelVnPayReturn);
 
 router.get(
