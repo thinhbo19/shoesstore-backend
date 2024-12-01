@@ -24,9 +24,9 @@ const authControllers = {
       email: req.body.email,
       password: hashed,
     });
-    console.log(newUser);
+
     const savedUser = await newUser.save();
-    return res.status(201).json({
+    return res.status(200).json({
       success: savedUser ? true : false,
       CreateUser: savedUser ? savedUser : "Cannot create user",
     });
