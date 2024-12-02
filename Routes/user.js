@@ -16,10 +16,22 @@ router.post(
   authControllers.registerUser
 );
 router.post(
+  "/registerTest",
+  validator.validateRegisterUser(),
+  validator.handleValidationErrors,
+  authControllers.registerUserForTest
+);
+router.post(
   "/login",
   validator.validateLogin(),
   validator.handleValidationErrors,
   authControllers.loginUser
+);
+router.post(
+  "/loginTest",
+  validator.validateLogin(),
+  validator.handleValidationErrors,
+  authControllers.loginUserForTest
 );
 router.get("/", userControllers.getallUser);
 router.get(

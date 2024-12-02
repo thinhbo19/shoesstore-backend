@@ -30,6 +30,29 @@ const authControllers = {
       success: savedUser ? true : false,
       CreateUser: savedUser ? savedUser : "Cannot create user",
     });
+  }),
+  registerUserForTest: asyncHandler(async (req, res) => {
+    const { username, phoneNumber, email, password } = req.body;
+
+    const CheckEmailExiSt = await User.findOne({ email });
+    if (CheckEmailExiSt) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Email already exists" });
+    }
+    // Create a new user
+    const newUser = new User({
+      username,
+      phoneNumber,
+      email,
+      password,
+    });
+
+    const savedUser = await newUser.save();
+    return res.status(200).json({
+      success: savedUser ? true : false,
+      CreateUser: savedUser ? savedUser : "Cannot create user",
+    });
   }), //accessToken
   functionAccessToken: (user) => {
     return jwt.sign(
@@ -103,7 +126,44 @@ const authControllers = {
       });
     }
   },
+  loginUserForTest: async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
+      const user = await User.findOne({ email, password });
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Email hoặc password không đúng!",
+        });
+      }
+      if (user.isBlocked === true) {
+        return res.status(400).json({
+          success: false,
+          message: "Tài khoản của bạn đã bị khóa!",
+        });
+      }
+
+      const accessToken = authControllers.functionAccessToken(user);
+      const refreshToken = authControllers.functionRefreshToken(user);
+      user.refresh_token = refreshToken;
+      await user.save();
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: false,
+        path: "/",
+        sameSite: "strict",
+      });
+      const { password: userPassword, ...userData } = user._doc;
+      res.status(200).json({ user: userData, accessToken });
+    } catch (error) {
+      console.error("Lỗi khi đăng nhập:", error);
+      res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi đăng nhập.",
+      });
+    }
+  },
   requestRefreshToken: async (req, res) => {
     const refreshToken = req.cookie.refreshToken;
     if (!refreshToken) throw new Error("you're not authenticated");
