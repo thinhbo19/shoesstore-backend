@@ -234,7 +234,40 @@ const authControllers = {
       token: resetToken,
     });
   }),
-
+  forgotPasswordToTest: asyncHandler(async (req, res) => {
+    const { email } = req.query;
+    if (!email) throw new Error("Please enter a valid email");
+    const user = await User.findOne({ email });
+    if (!user) throw new Error("User not found");
+    const resetToken = await token_Email.createToken(user);
+    await user.save();
+    setTimeout(async () => {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+    }, 15 * 60 * 1000);
+    res.status(200).json({
+      success: true,
+      message: "Token is created successfully!",
+      token: resetToken,
+    });
+  }),
+  resetPasswordToTest: async (req, res) => {
+    const { token, password, email } = req.body;
+    console.log(password);
+    if (!token || !password)
+      return res.status(400).json("Missing token or password");
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json("Invalid token or token expired");
+    }
+    user.password = password;
+    await user.save();
+    res.status(200).json({
+      success: user ? true : false,
+      message: user ? "Reset password successfully" : "Update Password Failed",
+    });
+  },
   resetPassword: async (req, res) => {
     const { token, password } = req.body;
     if (!token || !password)

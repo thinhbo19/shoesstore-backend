@@ -55,7 +55,9 @@ router.post(
   validator.handleValidationErrors,
   authControllers.forgotPassword
 );
+router.post("/forgotPasswordToTest", authControllers.forgotPasswordToTest);
 router.put("/resetpassword", authControllers.resetPassword);
+router.put("/resetpasswordToTest", authControllers.resetPasswordToTest);
 router.put(
   "/address",
   middlewareControllers.verifyToken,
