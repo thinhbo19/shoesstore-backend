@@ -46,6 +46,23 @@ const userControllers = {
       res.status(500).json("Cannot Find");
     }
   },
+  updateUserTest: async (req, res) => {
+    const { id } = req.user;
+    const { username, phoneNumber, Date } = req.body;
+    const data = {
+      username,
+      phoneNumber,
+      Date,
+    };
+    try {
+      const user = await User.findByIdAndUpdate(id, data, { new: true }).select(
+        "-password -refreshToken -admin "
+      );
+      res.status(200).json({ message: "Cập nhật thành công", user: user });
+    } catch (error) {
+      res.status(500).json("Cannot Find");
+    }
+  },
   updateUserByAdmin: async (req, res) => {
     const { id } = req.params;
     if (req.body.password) {

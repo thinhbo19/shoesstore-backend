@@ -194,6 +194,7 @@ const authControllers = {
   logout: async (req, res) => {
     try {
       const refreshToken = req.body.refreshToken;
+      console.log(refreshToken);
       res.clearCookie("refreshToken");
       const user = await User.findOne({ refresh_token: refreshToken });
       if (!user) {
