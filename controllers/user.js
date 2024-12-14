@@ -48,7 +48,7 @@ const userControllers = {
   },
   updateUserTest: async (req, res) => {
     const { id } = req.user;
-    const { username, phoneNumber, Date } = req.body;
+    const { username, phoneNumber, Date: dateInput } = req.body;
 
     try {
       // Lấy thông tin user hiện tại
@@ -59,11 +59,33 @@ const userControllers = {
         return res.status(404).json({ message: "Không tìm thấy người dùng." });
       }
 
-      // Chỉ cập nhật các trường có giá trị, giữ lại trường cũ nếu rỗng
+      // Kiểm tra và xử lý số điện thoại
+      if (phoneNumber) {
+        const phoneRegex = /^\d{10}$/; // Chỉ chấp nhận đúng 10 số
+        if (!phoneRegex.test(phoneNumber)) {
+          return res
+            .status(400)
+            .json({ message: "Số điện thoại phải có đúng 10 chữ số." });
+        }
+      }
+
+      // Kiểm tra và xử lý giá trị của dateInput
+      let validDate = currentUser.Date; // Giữ giá trị ngày cũ nếu không có đầu vào mới
+      if (dateInput) {
+        const parsedDate = new Date(dateInput);
+        if (isNaN(parsedDate.getTime())) {
+          return res
+            .status(400)
+            .json({ message: "Định dạng ngày không hợp lệ." });
+        }
+        validDate = parsedDate;
+      }
+
+      // Chỉ cập nhật các trường không rỗng
       const data = {
         username: username || currentUser.username,
         phoneNumber: phoneNumber || currentUser.phoneNumber,
-        Date: Date || currentUser.Date,
+        Date: validDate,
       };
 
       // Cập nhật thông tin người dùng
@@ -75,7 +97,7 @@ const userControllers = {
         .status(200)
         .json({ message: "Cập nhật thành công", user: updatedUser });
     } catch (error) {
-      console.error(error); // Log lỗi để dễ debug hơn
+      console.error(error); // Log lỗi để debug
       res
         .status(500)
         .json({ message: "Đã xảy ra lỗi trong quá trình cập nhật." });
