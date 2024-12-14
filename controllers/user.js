@@ -49,20 +49,39 @@ const userControllers = {
   updateUserTest: async (req, res) => {
     const { id } = req.user;
     const { username, phoneNumber, Date } = req.body;
-    const data = {
-      username,
-      phoneNumber,
-      Date,
-    };
+
     try {
-      const user = await User.findByIdAndUpdate(id, data, { new: true }).select(
-        "-password -refreshToken -admin "
+      // Lấy thông tin user hiện tại
+      const currentUser = await User.findById(id).select(
+        "-password -refreshToken -admin"
       );
-      res.status(200).json({ message: "Cập nhật thành công", user: user });
+      if (!currentUser) {
+        return res.status(404).json({ message: "Không tìm thấy người dùng." });
+      }
+
+      // Chỉ cập nhật các trường có giá trị, giữ lại trường cũ nếu rỗng
+      const data = {
+        username: username || currentUser.username,
+        phoneNumber: phoneNumber || currentUser.phoneNumber,
+        Date: Date || currentUser.Date,
+      };
+
+      // Cập nhật thông tin người dùng
+      const updatedUser = await User.findByIdAndUpdate(id, data, {
+        new: true,
+      }).select("-password -refreshToken -admin");
+
+      res
+        .status(200)
+        .json({ message: "Cập nhật thành công", user: updatedUser });
     } catch (error) {
-      res.status(500).json("Cannot Find");
+      console.error(error); // Log lỗi để dễ debug hơn
+      res
+        .status(500)
+        .json({ message: "Đã xảy ra lỗi trong quá trình cập nhật." });
     }
   },
+
   updateUserByAdmin: async (req, res) => {
     const { id } = req.params;
     if (req.body.password) {
