@@ -75,7 +75,7 @@ router.put(
   userControllers.updateUser
 );
 router.put(
-  "/updateTestTest",
+  "/updateTest",
   middlewareControllers.verifyToken,
   userControllers.updateUserTest
 );
