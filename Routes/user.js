@@ -107,6 +107,11 @@ router.put(
   userControllers.updateUserByAdmin
 );
 router.put(
+  "/changePass/:id",
+  middlewareControllers.verifyToken,
+  userControllers.changePassForTest
+);
+router.put(
   "/favorites/:pid",
   middlewareControllers.verifyToken,
   userControllers.Favorites

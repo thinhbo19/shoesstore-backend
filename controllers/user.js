@@ -118,6 +118,44 @@ const userControllers = {
       updatedUser: response ? response : "Some thing went wrong",
     });
   },
+  changePassForTest: async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Không được để trống",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password phải nhiều hơn 6 kí tự",
+      });
+    }
+
+    try {
+      const response = await User.findByIdAndUpdate(
+        id,
+        { password: password },
+        { new: true }
+      );
+
+      return res.status(200).json({
+        success: !!response,
+        message: "Đổi mật khẩu thành công" || "Something went wrong",
+      });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  },
+
   CurrentUser: async (req, res) => {
     const { id } = req.user;
     const user = await User.findById(id).select(
